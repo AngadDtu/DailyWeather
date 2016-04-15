@@ -1,6 +1,8 @@
 package com.example.android.sunshine.app;
 
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.text.format.Time;
 import android.util.Log;
 
@@ -21,6 +23,12 @@ import java.util.Scanner;
  */
 public class ForecastAsyncTask extends AsyncTask<String,Void,String[]> {
     ForecastAsyncTaskInterface listener;
+    String unitType;
+
+    public ForecastAsyncTask(String unitType) {
+        this.unitType=unitType;
+    }
+
     @Override
     protected String[] doInBackground(String... params) {
         String urlString = params[0];
@@ -61,7 +69,14 @@ public class ForecastAsyncTask extends AsyncTask<String,Void,String[]> {
     /**
      * Prepare the weather high/lows for presentation.
      */
-    private String formatHighLows(double high, double low) {
+    private String formatHighLows(double high, double low, String unitType) {
+
+                            if (unitType.equals(R.string.pref_units_imperial)) {
+                            high = (high * 1.8) + 32;
+                            low = (low * 1.8) + 32;
+                        } else if (!unitType.equals(R.string.pref_units_metric)) {
+                            Log.d("OOPS", "Unit type not found: " + unitType);
+                        }
         // For presentation, assume the user doesn't care about tenths of a degree.
         long roundedHigh = Math.round(high);
         long roundedLow = Math.round(low);
@@ -85,6 +100,7 @@ public class ForecastAsyncTask extends AsyncTask<String,Void,String[]> {
             JSONObject object = new JSONObject(jsonString);
             JSONArray forecastArray = object.getJSONArray("list");
             String[] output = new String[forecastArray.length()];
+
             for (int i = 0; i < forecastArray.length(); i++) {
                 JSONObject dayForecast = forecastArray.getJSONObject(i);
                 String s = new String();
@@ -100,7 +116,7 @@ public class ForecastAsyncTask extends AsyncTask<String,Void,String[]> {
                 JSONObject temperatureObject = dayForecast.getJSONObject("temp");
                 double high = temperatureObject.getDouble("max");
                 double low = temperatureObject.getDouble("min");
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low, unitType);
                 output[i] = day + " - " + description + " - " + highAndLow;
 
             }

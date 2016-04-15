@@ -64,6 +64,8 @@ Intent i=new Intent();
         return super.onOptionsItemSelected(item);
     }
 
+
+
     /**
      * A placeholder fragment containing a simple view.
      */
@@ -82,6 +84,7 @@ Intent i=new Intent();
         ProgressDialog progress;
         ArrayList<String> weekForecast;
         ArrayAdapter<String> adapter;
+        String unitType;
 
         public ForecastFragment() {
         }
@@ -101,31 +104,45 @@ Intent i=new Intent();
         public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
             if (id == R.id.action_refresh) {
-
-
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
-                            String location = prefs.getString(getString(R.string.pref_location_key),
-                                            getString(R.string.pref_location_default));
-
-                String urlString = getURLString(location);
-                ForecastAsyncTask task = new ForecastAsyncTask();
-                task.listener = this;
-                task.execute(urlString);
-                progress = new ProgressDialog(getActivity());
-                progress.setTitle("Getting Forecast Data");
-                progress.setMessage("Wait!");
-                progress.show();
+                updateWeather();
                 return true;
             }
 
             return super.onOptionsItemSelected(item);
         }
 
-        private String getURLString(String location) {
+        private void updateWeather() {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+            String location = prefs.getString(getString(R.string.pref_location_key),
+                    getString(R.string.pref_location_default));
+            SharedPreferences sharedPrefs =
+                                        PreferenceManager.getDefaultSharedPreferences(getActivity());
+                         unitType = sharedPrefs.getString(
+                                        getString(R.string.pref_units_key),
+                                        getString(R.string.pref_units_metric));
+
+            String urlString = getURLString(location,unitType);
+            ForecastAsyncTask task = new ForecastAsyncTask(unitType);
+            task.listener = this;
+            task.execute(urlString);
+            progress = new ProgressDialog(getActivity());
+            progress.setTitle("Getting Forecast Data");
+            progress.setMessage("Wait!");
+            progress.show();
+
+        }
+
+        @Override
+        public void onStart() {
+            super.onStart();
+            updateWeather();
+        }
+
+        private String getURLString(String unit, String location) {
             Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                     .appendQueryParameter(QUERY_PARAM, location)
                     .appendQueryParameter(FORMAT_PARAM, format)
-                    .appendQueryParameter(UNITS_PARAM, units)
+                    .appendQueryParameter(UNITS_PARAM,unit )
                     .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
                     .appendQueryParameter(API_KEY, key)
                     .build();
